@@ -136,6 +136,20 @@ input {
   text-transform: uppercase;
 }
 
+.entry-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.example-link {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 12px var(--font-geist-mono), monospace;
+  cursor: pointer;
+}
+
 .input-track {
   display: flex;
   gap: 10px;
@@ -167,6 +181,12 @@ input {
   color: #04120c;
   font-weight: 650;
   cursor: pointer;
+}
+
+.input-track button:disabled,
+.quote-action:disabled {
+  cursor: wait;
+  opacity: 0.64;
 }
 
 .empty-analysis {
@@ -224,6 +244,286 @@ input {
   background: rgba(54, 230, 151, 0.45);
 }
 
+.status-error {
+  margin: 26px;
+  padding: 30px;
+  border: 1px solid #58352c;
+  border-radius: 14px;
+  background: rgba(121, 49, 31, 0.12);
+}
+
+.status-error strong {
+  display: block;
+  margin: 14px 0 8px;
+  font-size: 20px;
+}
+
+.status-error span,
+.inline-error,
+.inline-warning,
+.data-disclosure {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.analysis {
+  padding: 25px 22px 20px;
+}
+
+.pool-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.pair-line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pair-line h2 {
+  margin: 0;
+  font-size: clamp(25px, 4vw, 34px);
+  font-weight: 530;
+  letter-spacing: -0.05em;
+}
+
+.version-badge,
+.hook-badge {
+  padding: 6px 10px;
+  border: 1px solid rgba(54, 230, 151, 0.42);
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font: 12px var(--font-geist-mono), monospace;
+  letter-spacing: 0.08em;
+}
+
+.hook-badge {
+  align-self: start;
+  border-color: rgba(242, 178, 78, 0.44);
+  background: rgba(242, 178, 78, 0.1);
+  color: #f2b24e;
+}
+
+.indexed-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font: 12px var(--font-geist-mono), monospace;
+  text-transform: uppercase;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.metric-grid article {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-raised);
+}
+
+.metric-grid span,
+.quote-controls label,
+.quote-result span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font: 11px var(--font-geist-mono), monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.metric-grid strong {
+  overflow: hidden;
+  display: block;
+  font: 18px var(--font-geist-mono), monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-card {
+  margin: 0;
+  padding: 18px 18px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.chart-card figcaption {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font: 12px var(--font-geist-mono), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chart-card figcaption span {
+  color: var(--foreground);
+}
+
+.chart-card figcaption small {
+  color: var(--muted);
+}
+
+.band-chart,
+.curve-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-baseline {
+  stroke: var(--line-bright);
+  stroke-width: 1;
+}
+
+.band {
+  fill: #24473d;
+}
+
+.band.active {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 7px rgba(54, 230, 151, 0.42));
+}
+
+.band-active-label {
+  fill: var(--accent);
+  font: 10px var(--font-geist-mono), monospace;
+}
+
+.chart-axis-label {
+  fill: var(--muted);
+  font: 10px var(--font-geist-mono), monospace;
+}
+
+.curve-fill {
+  fill: rgba(54, 230, 151, 0.1);
+  stroke: none;
+}
+
+.curve-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.curve-point {
+  fill: var(--accent);
+}
+
+.curve-empty {
+  display: flex;
+  align-items: center;
+  min-height: 150px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.quote-strip {
+  display: grid;
+  grid-template-columns: minmax(135px, 1fr) minmax(120px, 0.8fr) auto minmax(220px, 1.5fr);
+  align-items: end;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.quote-controls select,
+.quote-controls input {
+  width: 100%;
+  height: 50px;
+  padding: 0 13px;
+  border: 1px solid var(--line-bright);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--foreground);
+  outline: none;
+}
+
+.quote-controls select:focus,
+.quote-controls input:focus {
+  border-color: var(--accent);
+}
+
+.quote-action {
+  height: 50px;
+  padding: 0 20px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #04120c;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.quote-result {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 50px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: rgba(54, 230, 151, 0.08);
+}
+
+.quote-result p {
+  align-self: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.quote-result span {
+  margin-bottom: 4px;
+}
+
+.quote-result strong {
+  font: 17px var(--font-geist-mono), monospace;
+}
+
+.quote-result .impact strong {
+  color: var(--accent);
+}
+
+.inline-error,
+.inline-warning {
+  margin: 12px 2px 0;
+  padding: 10px 13px;
+  border: 1px solid #58352c;
+  border-radius: 8px;
+  color: #ed9b82;
+}
+
+.inline-warning {
+  border-color: rgba(242, 178, 78, 0.44);
+  color: #f2b24e;
+}
+
+.data-disclosure {
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
 @media (max-width: 700px) {
   .shell {
     width: min(100% - 30px, 1280px);
@@ -256,5 +556,31 @@ input {
 
   .dormant-bars {
     margin-top: 34px;
+  }
+
+  .analysis {
+    padding: 20px 14px 14px;
+  }
+
+  .pool-heading,
+  .pair-line {
+    flex-wrap: wrap;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric-grid article:first-child {
+    grid-column: span 2;
+  }
+
+  .quote-strip {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .quote-result {
+    margin-top: 5px;
   }
 }
