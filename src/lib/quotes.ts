@@ -14,7 +14,7 @@ import type {
   SlippageSample,
   SwapDirection,
 } from "./domain";
-import { ethCall, EtherscanError } from "./etherscan";
+import { ethCall, EtherscanCallError, EtherscanError } from "./etherscan";
 import {
   calculatePriceImpactPct,
   executionPrice,
@@ -400,7 +400,11 @@ export async function quotePool(
     }
     return await quoteConcentrated(request, call, wait, quotedAt);
   } catch (error) {
-    if (request.analysis.version === "v4" && request.analysis.hookAddress) {
+    if (
+      request.analysis.version === "v4" &&
+      request.analysis.hookAddress &&
+      error instanceof EtherscanCallError
+    ) {
       return {
         status: "conditional",
         amountIn: request.amountIn,

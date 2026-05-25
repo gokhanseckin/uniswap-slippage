@@ -1,6 +1,7 @@
 import { encodeFunctionResult, parseUnits } from "viem";
 import { describe, expect, it, vi } from "vitest";
 import type { PoolAnalysis } from "./domain";
+import { EtherscanCallError, EtherscanError } from "./etherscan";
 import {
   quotePool,
   V2_PAIR_ABI,
@@ -105,10 +106,28 @@ describe("quotePool", () => {
 
     const result = await quotePool(
       { analysis: hooked, direction: "token0-to-token1", amountIn: "1" },
-      { call: vi.fn().mockRejectedValue(new Error("execution reverted")) },
+      {
+        call: vi.fn().mockRejectedValue(new EtherscanCallError("execution reverted")),
+      },
     );
 
     expect(result.status).toBe("conditional");
     expect(result.warning).toContain("hook");
+  });
+
+  it("does not hide Etherscan configuration failure behind a hook warning", async () => {
+    const hooked = {
+      ...analysis("v4"),
+      identifier:
+        "0x5c6165e63581876edc7413bbc18e53b733f86dda709b1e9acf171fa15b0fa7a4",
+      hookAddress: "0x0000000000000000000000000000000000000042",
+    };
+
+    await expect(
+      quotePool(
+        { analysis: hooked, direction: "token0-to-token1", amountIn: "1" },
+        { call: vi.fn().mockRejectedValue(new EtherscanError("key missing")) },
+      ),
+    ).rejects.toThrow("key missing");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ethCall, EtherscanError } from "./etherscan";
+import { ethCall, EtherscanCallError, EtherscanError } from "./etherscan";
 
 describe("ethCall", () => {
   it("sends a read-only Etherscan V2 proxy request for the selected chain", async () => {
@@ -29,5 +29,21 @@ describe("ethCall", () => {
         apiKey: "",
       }),
     ).rejects.toBeInstanceOf(EtherscanError);
+  });
+
+  it("distinguishes an onchain call rejection from transport configuration errors", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ error: { message: "execution reverted" } }),
+        { status: 200 },
+      ),
+    );
+
+    await expect(
+      ethCall(1, "0x0000000000000000000000000000000000000042", "0x", {
+        apiKey: "scan-key",
+        fetcher,
+      }),
+    ).rejects.toBeInstanceOf(EtherscanCallError);
   });
 });

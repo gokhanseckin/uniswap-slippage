@@ -17,6 +17,13 @@ export class EtherscanError extends Error {
   }
 }
 
+export class EtherscanCallError extends EtherscanError {
+  constructor(message: string) {
+    super(message);
+    this.name = "EtherscanCallError";
+  }
+}
+
 export async function ethCall(
   chainId: number,
   to: `0x${string}`,
@@ -51,9 +58,15 @@ export async function ethCall(
     message?: string;
   };
 
-  if (!result.result?.startsWith("0x") || result.error) {
+  if (result.error) {
+    throw new EtherscanCallError(
+      result.error.message ?? "Etherscan could not execute the read call.",
+    );
+  }
+
+  if (!result.result?.startsWith("0x")) {
     throw new EtherscanError(
-      result.error?.message ?? result.message ?? "Etherscan could not execute the read call.",
+      result.message ?? "Etherscan could not execute the read call.",
     );
   }
 
