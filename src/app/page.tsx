@@ -1,6 +1,13 @@
 import { AnalyzerDashboard } from "@/components/analyzer-dashboard";
 
-export default function Home() {
+interface HomeProps {
+  searchParams: Promise<{ pool?: string | string[] | undefined }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const query = await searchParams;
+  const initialPoolUrl = typeof query.pool === "string" ? query.pool : "";
+
   return (
     <main className="shell">
       <header className="masthead">
@@ -20,7 +27,7 @@ export default function Home() {
         </p>
       </section>
 
-      <AnalyzerDashboard />
+      <AnalyzerDashboard initialPoolUrl={initialPoolUrl} />
     </main>
   );
 }

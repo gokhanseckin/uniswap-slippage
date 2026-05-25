@@ -27,7 +27,7 @@ describe("analyzeIndexedPool", () => {
           liquidity: "1000000",
           tick: "12",
           tickSpacing: "60",
-          token0Price: "4010.5",
+          token1Price: "4010.5",
           totalValueLockedToken0: "250",
           totalValueLockedToken1: "1000000",
           totalValueLockedUSD: "2002500",
@@ -37,13 +37,13 @@ describe("analyzeIndexedPool", () => {
               tickIdx: "-60",
               liquidityGross: "1000000",
               liquidityNet: "1000000",
-              price0: "3980",
+              price1: "3980",
             },
             {
               tickIdx: "60",
               liquidityGross: "1000000",
               liquidityNet: "-1000000",
-              price0: "4040",
+              price1: "4040",
             },
           ],
         },
@@ -57,18 +57,52 @@ describe("analyzeIndexedPool", () => {
     );
 
     expect(result.version).toBe("v4");
+    expect(result.dynamicFee).toBe(false);
     expect(result.pair.token0.symbol).toBe("WETH");
     expect(result.hookAddress).toBe(
       "0x0000000000000000000000000000000000000042",
     );
+    expect(result.currentPrice).toBe("4010.5");
     expect(result.liquidityBands).toEqual([
       expect.objectContaining({
         tickLower: -60,
         tickUpper: 60,
+        lowerPrice: "3980",
+        upperPrice: "4040",
         active: true,
         liquidity: "1000000",
       }),
     ]);
+  });
+
+  it("labels the v4 dynamic fee sentinel instead of treating it as a percentage", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      graphResponse({
+        pool: {
+          id: "0xpool",
+          token0: { id: "0x0", symbol: "ETH", name: "Ether", decimals: "18" },
+          token1: { id: "0x1", symbol: "USDC", name: "USD Coin", decimals: "6" },
+          feeTier: "8388608",
+          liquidity: "0",
+          tick: null,
+          tickSpacing: "60",
+          token1Price: "4000",
+          totalValueLockedToken0: "0",
+          totalValueLockedToken1: "0",
+          totalValueLockedUSD: "0",
+          hooks: "0x0000000000000000000000000000000000000042",
+          ticks: [],
+        },
+      }),
+    );
+
+    const result = await analyzeIndexedPool(
+      parsePoolUrl(V4_URL),
+      getEnabledChain("ethereum"),
+      { apiKey: "graph-key", fetcher },
+    );
+
+    expect(result.dynamicFee).toBe(true);
   });
 
   it("looks up an address as v3 before falling back to v2", async () => {
@@ -84,7 +118,7 @@ describe("analyzeIndexedPool", () => {
             reserve0: "50000",
             reserve1: "100",
             reserveUSD: "400000",
-            token0Price: "0.002",
+            token1Price: "500",
           },
         }),
       );
@@ -96,6 +130,7 @@ describe("analyzeIndexedPool", () => {
     );
 
     expect(result.version).toBe("v2");
+    expect(result.currentPrice).toBe("500");
     expect(result.liquidityBands[0]).toMatchObject({
       label: "Full range",
       active: true,
@@ -114,7 +149,7 @@ describe("analyzeIndexedPool", () => {
           liquidity: "720000",
           tick: "0",
           tickSpacing: "60",
-          token0Price: "4012",
+          token1Price: "4012",
           totalValueLockedToken0: "20",
           totalValueLockedToken1: "80240",
           totalValueLockedUSD: "160480",
@@ -123,13 +158,13 @@ describe("analyzeIndexedPool", () => {
               tickIdx: "-120",
               liquidityGross: "720000",
               liquidityNet: "720000",
-              price0: "3950",
+              price1: "3950",
             },
             {
               tickIdx: "120",
               liquidityGross: "720000",
               liquidityNet: "-720000",
-              price0: "4075",
+              price1: "4075",
             },
           ],
         },
@@ -146,5 +181,66 @@ describe("analyzeIndexedPool", () => {
     expect(result.feeTier).toBe(3000);
     expect(result.liquidityBands[0].active).toBe(true);
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("loads additional initialized tick pages instead of omitting the active range", async () => {
+    const firstPage = Array.from({ length: 1000 }, (_, index) => ({
+      tickIdx: String(-2000 + index),
+      liquidityGross: "0",
+      liquidityNet: "0",
+      price1: "0",
+    }));
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        graphResponse({
+          pool: {
+            id: "0xpool",
+            token0: { id: "0x0", symbol: "WETH", name: "Ether", decimals: "18" },
+            token1: { id: "0x1", symbol: "USDC", name: "USD Coin", decimals: "6" },
+            feeTier: "500",
+            liquidity: "100",
+            tick: "12",
+            tickSpacing: "60",
+            token1Price: "4010",
+            totalValueLockedToken0: "1",
+            totalValueLockedToken1: "4010",
+            totalValueLockedUSD: "8020",
+            hooks: "0x0000000000000000000000000000000000000000",
+            ticks: firstPage,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        graphResponse({
+          pool: {
+            ticks: [
+              {
+                tickIdx: "0",
+                liquidityGross: "100",
+                liquidityNet: "100",
+                price1: "4000",
+              },
+              {
+                tickIdx: "60",
+                liquidityGross: "100",
+                liquidityNet: "-100",
+                price1: "4040",
+              },
+            ],
+          },
+        }),
+      );
+
+    const result = await analyzeIndexedPool(
+      parsePoolUrl(V4_URL),
+      getEnabledChain("ethereum"),
+      { apiKey: "graph-key", fetcher },
+    );
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.liquidityBands).toContainEqual(
+      expect.objectContaining({ tickLower: 0, tickUpper: 60, active: true }),
+    );
   });
 });

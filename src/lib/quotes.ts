@@ -199,7 +199,7 @@ async function quoteV2(
     amountOut: exact.amountOut,
     executionPrice: executionPrice(amountIn, exact.amountOut, direction),
     priceImpactPct: exact.priceImpactPct,
-    feePct: feeTierPct(analysis.feeTier),
+    feePct: feeTierPct(analysis.feeTier, analysis.dynamicFee),
     quotedAt,
     samples: SAMPLE_FACTORS.map((factor) =>
       quoteOne(sampleAmount(amountIn, factor)),
@@ -378,7 +378,7 @@ async function quoteConcentrated(
       spotPrice,
       request.direction,
     ),
-    feePct: feeTierPct(request.analysis.feeTier),
+    feePct: feeTierPct(request.analysis.feeTier, request.analysis.dynamicFee),
     quotedAt,
     samples,
   };
@@ -407,7 +407,7 @@ export async function quotePool(
         amountOut: null,
         executionPrice: null,
         priceImpactPct: null,
-        feePct: feeTierPct(request.analysis.feeTier),
+        feePct: feeTierPct(request.analysis.feeTier, request.analysis.dynamicFee),
         quotedAt,
         samples: [],
         warning:

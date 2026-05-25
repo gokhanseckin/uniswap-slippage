@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import Home from "./page";
 
 describe("home page", () => {
-  it("introduces the liquidity research workflow", () => {
-    render(<Home />);
+  it("introduces the liquidity research workflow", async () => {
+    render(await Home({ searchParams: Promise.resolve({}) }));
 
     expect(
       screen.getByRole("heading", { name: "Map liquidity. Measure impact." }),

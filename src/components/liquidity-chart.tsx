@@ -19,8 +19,13 @@ export function LiquidityChart({ bands, token1Symbol }: LiquidityChartProps) {
   const values = bands.map((band) => Number(band.liquidity));
   const max = Math.max(...values, 1);
   const width = 740;
-  const usableWidth = width - 44;
-  const barWidth = Math.max(12, usableWidth / Math.max(bands.length, 1) - 8);
+  const plotStart = 26;
+  const plotEnd = 720;
+  const usableWidth = plotEnd - plotStart;
+  const columnWidth = usableWidth / Math.max(bands.length, 1);
+  const gap = bands.length > 80 ? columnWidth * 0.12 : 8;
+  const barWidth = Math.max(0, columnWidth - gap);
+  const labelStep = Math.max(1, Math.ceil(bands.length / 8));
 
   return (
     <figure className="chart-card primary-chart">
@@ -37,7 +42,7 @@ export function LiquidityChart({ bands, token1Symbol }: LiquidityChartProps) {
         <path className="chart-baseline" d="M22 194 H720" />
         {bands.map((band, index) => {
           const height = Math.max(10, (Number(band.liquidity) / max) * 152);
-          const x = 26 + index * (barWidth + 8);
+          const x = plotStart + index * (barWidth + gap);
           const y = 194 - height;
           return (
             <g key={band.id}>
@@ -54,9 +59,11 @@ export function LiquidityChart({ bands, token1Symbol }: LiquidityChartProps) {
                   ACTIVE
                 </text>
               ) : null}
-              <text className="chart-axis-label" x={x} y="214">
-                {compactPrice(band.lowerPrice)}
-              </text>
+              {band.active || index % labelStep === 0 ? (
+                <text className="chart-axis-label" x={x} y="214">
+                  {compactPrice(band.lowerPrice)}
+                </text>
+              ) : null}
             </g>
           );
         })}

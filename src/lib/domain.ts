@@ -48,6 +48,7 @@ export interface PoolAnalysis {
     token1: TokenSummary;
   };
   feeTier: number | null;
+  dynamicFee: boolean;
   tickSpacing: number | null;
   hookAddress: string | null;
   currentTick: number | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import type { PoolAnalysis, QuoteResult, SwapDirection } from "@/lib/domain";
 import { LiquidityChart } from "./liquidity-chart";
 import { SlippageChart } from "./slippage-chart";
@@ -21,7 +21,10 @@ function formatAmount(value: string | null, maxDecimals = 4): string {
   }).format(numeric);
 }
 
-function feeLabel(feeTier: number | null): string {
+function feeLabel(feeTier: number | null, dynamicFee: boolean): string {
+  if (dynamicFee) {
+    return "Dynamic";
+  }
   return feeTier === null ? "--" : `${formatAmount(String(feeTier / 10000), 4)}%`;
 }
 
@@ -38,8 +41,14 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return payload;
 }
 
-export function AnalyzerDashboard() {
-  const [poolUrl, setPoolUrl] = useState("");
+interface AnalyzerDashboardProps {
+  initialPoolUrl?: string;
+}
+
+export function AnalyzerDashboard({
+  initialPoolUrl = "",
+}: AnalyzerDashboardProps) {
+  const [poolUrl, setPoolUrl] = useState(initialPoolUrl);
   const [analysis, setAnalysis] = useState<PoolAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -49,13 +58,6 @@ export function AnalyzerDashboard() {
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
-
-  useEffect(() => {
-    const sharedPool = new URLSearchParams(window.location.search).get("pool");
-    if (sharedPool) {
-      setPoolUrl(sharedPool);
-    }
-  }, []);
 
   async function analyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -204,7 +206,7 @@ export function AnalyzerDashboard() {
             </article>
             <article>
               <span>Fee tier</span>
-              <strong>{feeLabel(analysis.feeTier)}</strong>
+              <strong>{feeLabel(analysis.feeTier, analysis.dynamicFee)}</strong>
             </article>
             <article>
               <span>{analysis.pair.token0.symbol} amount</span>

@@ -28,6 +28,7 @@ function analysis(version: PoolAnalysis["version"]): PoolAnalysis {
       },
     },
     feeTier: 3000,
+    dynamicFee: false,
     tickSpacing: 60,
     hookAddress: null,
     currentTick: 0,

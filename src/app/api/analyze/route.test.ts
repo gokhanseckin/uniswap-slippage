@@ -49,6 +49,7 @@ describe("POST /api/analyze", () => {
         token1: { id: "0x1", symbol: "USDC", name: "USD Coin", decimals: 6 },
       },
       feeTier: 500,
+      dynamicFee: false,
       tickSpacing: 60,
       hookAddress: null,
       currentTick: 12,

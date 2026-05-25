@@ -29,7 +29,7 @@ interface GraphTick {
   tickIdx: string;
   liquidityGross: string;
   liquidityNet: string;
-  price0: string;
+  price1: string;
 }
 
 interface ConcentratedPool {
@@ -40,7 +40,7 @@ interface ConcentratedPool {
   liquidity: string;
   tick: string | null;
   tickSpacing: string;
-  token0Price: string;
+  token1Price: string;
   totalValueLockedToken0: string;
   totalValueLockedToken1: string;
   totalValueLockedUSD: string;
@@ -55,10 +55,11 @@ interface V2Pair {
   reserve0: string;
   reserve1: string;
   reserveUSD: string;
-  token0Price: string;
+  token1Price: string;
 }
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const V4_DYNAMIC_FEE_FLAG = 0x800000;
 
 const CONCENTRATED_QUERY = `
   query Pool($id: ID!) {
@@ -70,22 +71,35 @@ const CONCENTRATED_QUERY = `
       liquidity
       tick
       tickSpacing
-      token0Price
+      token1Price
       totalValueLockedToken0
       totalValueLockedToken1
       totalValueLockedUSD
       hooks
-      ticks(first: 200, orderBy: tickIdx, orderDirection: asc) {
+      ticks(first: 1000, orderBy: tickIdx, orderDirection: asc) {
         tickIdx
         liquidityGross
         liquidityNet
-        price0
+        price1
       }
     }
   }
 `;
 
 const V3_QUERY = CONCENTRATED_QUERY.replace("\n      hooks", "");
+
+const TICKS_PAGE_QUERY = `
+  query PoolTicks($id: ID!, $skip: Int!) {
+    pool(id: $id) {
+      ticks(first: 1000, skip: $skip, orderBy: tickIdx, orderDirection: asc) {
+        tickIdx
+        liquidityGross
+        liquidityNet
+        price1
+      }
+    }
+  }
+`;
 
 const V2_QUERY = `
   query Pair($id: ID!) {
@@ -96,7 +110,7 @@ const V2_QUERY = `
       reserve0
       reserve1
       reserveUSD
-      token0Price
+      token1Price
     }
   }
 `;
@@ -137,7 +151,7 @@ function graphKey(options: GraphOptions): string {
 async function querySubgraph<T>(
   subgraphId: string | undefined,
   query: string,
-  identifier: string,
+  variables: Record<string, string | number>,
   options: GraphOptions,
 ): Promise<T> {
   if (!subgraphId) {
@@ -149,7 +163,7 @@ async function querySubgraph<T>(
   const response = await fetcher(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, variables: { id: identifier } }),
+    body: JSON.stringify({ query, variables }),
     cache: "no-store",
   });
 
@@ -171,6 +185,33 @@ async function querySubgraph<T>(
   }
 
   return payload.data;
+}
+
+async function loadAllTicks(
+  pool: ConcentratedPool,
+  subgraphId: string | undefined,
+  identifier: string,
+  options: GraphOptions,
+): Promise<ConcentratedPool> {
+  const ticks = [...pool.ticks];
+  let pageSize = pool.ticks.length;
+  let skip = pageSize;
+
+  while (pageSize === 1000) {
+    const data = await querySubgraph<{
+      pool: { ticks: GraphTick[] } | null;
+    }>(subgraphId, TICKS_PAGE_QUERY, { id: identifier, skip }, options);
+
+    if (!data.pool) {
+      throw new PoolNotFoundError();
+    }
+
+    ticks.push(...data.pool.ticks);
+    pageSize = data.pool.ticks.length;
+    skip += pageSize;
+  }
+
+  return { ...pool, ticks };
 }
 
 function liquidityBands(
@@ -198,8 +239,8 @@ function liquidityBands(
       id: `${tickLower}:${tickUpper}`,
       tickLower,
       tickUpper,
-      lowerPrice: lower.price0,
-      upperPrice: upper.price0,
+      lowerPrice: lower.price1,
+      upperPrice: upper.price1,
       liquidity: runningLiquidity.toString(),
       active:
         currentTick !== null &&
@@ -219,6 +260,7 @@ function concentratedAnalysis(
   indexedAt: string,
 ): PoolAnalysis {
   const currentTick = pool.tick === null ? null : Number(pool.tick);
+  const feeTier = Number(pool.feeTier);
   const hookAddress =
     version === "v4" && pool.hooks && pool.hooks !== ZERO_ADDRESS
       ? pool.hooks
@@ -232,11 +274,12 @@ function concentratedAnalysis(
       token0: tokenSummary(pool.token0),
       token1: tokenSummary(pool.token1),
     },
-    feeTier: Number(pool.feeTier),
+    feeTier,
+    dynamicFee: version === "v4" && feeTier === V4_DYNAMIC_FEE_FLAG,
     tickSpacing: Number(pool.tickSpacing),
     hookAddress,
     currentTick,
-    currentPrice: pool.token0Price,
+    currentPrice: pool.token1Price,
     amounts: {
       token0: pool.totalValueLockedToken0,
       token1: pool.totalValueLockedToken1,
@@ -262,10 +305,11 @@ function v2Analysis(
       token1: tokenSummary(pair.token1),
     },
     feeTier: 3000,
+    dynamicFee: false,
     tickSpacing: null,
     hookAddress: null,
     currentTick: null,
-    currentPrice: pair.token0Price,
+    currentPrice: pair.token1Price,
     amounts: { token0: pair.reserve0, token1: pair.reserve1 },
     tvlUsd: pair.reserveUSD,
     liquidityBands: [
@@ -295,7 +339,7 @@ export async function analyzeIndexedPool(
     const data = await querySubgraph<{ pool: ConcentratedPool | null }>(
       chain.subgraphs.v4,
       CONCENTRATED_QUERY,
-      parsed.identifier,
+      { id: parsed.identifier },
       options,
     );
 
@@ -303,23 +347,35 @@ export async function analyzeIndexedPool(
       throw new PoolNotFoundError();
     }
 
-    return concentratedAnalysis("v4", parsed, chain, data.pool, indexedAt);
+    const pool = await loadAllTicks(
+      data.pool,
+      chain.subgraphs.v4,
+      parsed.identifier,
+      options,
+    );
+    return concentratedAnalysis("v4", parsed, chain, pool, indexedAt);
   }
 
   const v3 = await querySubgraph<{ pool: ConcentratedPool | null }>(
     chain.subgraphs.v3,
     V3_QUERY,
-    parsed.identifier,
+    { id: parsed.identifier },
     options,
   );
   if (v3.pool) {
-    return concentratedAnalysis("v3", parsed, chain, v3.pool, indexedAt);
+    const pool = await loadAllTicks(
+      v3.pool,
+      chain.subgraphs.v3,
+      parsed.identifier,
+      options,
+    );
+    return concentratedAnalysis("v3", parsed, chain, pool, indexedAt);
   }
 
   const v2 = await querySubgraph<{ pair: V2Pair | null }>(
     chain.subgraphs.v2,
     V2_QUERY,
-    parsed.identifier,
+    { id: parsed.identifier },
     options,
   );
   if (v2.pair) {

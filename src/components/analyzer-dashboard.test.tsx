@@ -15,6 +15,7 @@ const ANALYSIS = {
     token1: { id: "0x1", symbol: "USDC", name: "USD Coin", decimals: 6 },
   },
   feeTier: 500,
+  dynamicFee: false,
   tickSpacing: 60,
   hookAddress: null,
   currentTick: 12,
@@ -62,6 +63,12 @@ afterEach(() => {
 });
 
 describe("AnalyzerDashboard", () => {
+  it("starts with a shared pool URL supplied by the page", () => {
+    render(<AnalyzerDashboard initialPoolUrl={POOL_URL} />);
+
+    expect(screen.getByLabelText("Uniswap pool URL")).toHaveValue(POOL_URL);
+  });
+
   it("renders liquidity ranges then quotes a typed swap size", async () => {
     const fetcher = vi
       .fn()
@@ -109,5 +116,23 @@ describe("AnalyzerDashboard", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Network not enabled.");
     });
+  });
+
+  it("identifies dynamic fee v4 pools without showing the sentinel as a rate", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        response({ ...ANALYSIS, feeTier: 8388608, dynamicFee: true }),
+      ),
+    );
+    render(<AnalyzerDashboard />);
+
+    fireEvent.change(screen.getByLabelText("Uniswap pool URL"), {
+      target: { value: POOL_URL },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze pool" }));
+
+    expect(await screen.findByText("Dynamic")).toBeInTheDocument();
+    expect(screen.queryByText("838.8608%")).not.toBeInTheDocument();
   });
 });

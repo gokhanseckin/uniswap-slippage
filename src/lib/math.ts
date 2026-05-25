@@ -60,6 +60,11 @@ export function calculatePriceImpactPct(
   return compact(impact, 10);
 }
 
-export function feeTierPct(feeTier: number | null): string | null {
-  return feeTier === null ? null : compact(new Decimal(feeTier).div(10000));
+export function feeTierPct(
+  feeTier: number | null,
+  dynamicFee = false,
+): string | null {
+  return feeTier === null || dynamicFee
+    ? null
+    : compact(new Decimal(feeTier).div(10000));
 }
