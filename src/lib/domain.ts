@@ -14,6 +14,11 @@ export interface ChainConfig {
   enabled: boolean;
   disabledReason?: string;
   subgraphs: Partial<Record<ProtocolVersion, string>>;
+  contracts: {
+    v3QuoterV2?: `0x${string}`;
+    v4Quoter?: `0x${string}`;
+    v4StateView?: `0x${string}`;
+  };
 }
 
 export interface TokenSummary {
@@ -43,6 +48,7 @@ export interface PoolAnalysis {
     token1: TokenSummary;
   };
   feeTier: number | null;
+  tickSpacing: number | null;
   hookAddress: string | null;
   currentTick: number | null;
   currentPrice: string | null;
@@ -53,4 +59,30 @@ export interface PoolAnalysis {
   tvlUsd: string | null;
   liquidityBands: LiquidityBand[];
   indexedAt: string;
+}
+
+export type SwapDirection = "token0-to-token1" | "token1-to-token0";
+
+export interface QuoteRequest {
+  analysis: PoolAnalysis;
+  direction: SwapDirection;
+  amountIn: string;
+}
+
+export interface SlippageSample {
+  amountIn: string;
+  amountOut: string;
+  priceImpactPct: string;
+}
+
+export interface QuoteResult {
+  status: "quoted" | "conditional";
+  amountIn: string;
+  amountOut: string | null;
+  executionPrice: string | null;
+  priceImpactPct: string | null;
+  feePct: string | null;
+  quotedAt: string;
+  samples: SlippageSample[];
+  warning?: string;
 }

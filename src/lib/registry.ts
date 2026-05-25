@@ -11,6 +11,11 @@ const CHAINS: Record<string, ChainConfig> = {
       v3: "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV",
       v4: "DiYPVdygkfjDWhbxGSqAQxwBKmfKnkWQojqeM2rkLb3G",
     },
+    contracts: {
+      v3QuoterV2: "0x61fFE014bA17989E743c5F6cB21bF9697530B21e",
+      v4Quoter: "0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203",
+      v4StateView: "0x7ffe42c4a5deea5b0fec41c94c136cf115597227",
+    },
   },
   arbitrum: {
     slug: "arbitrum",
@@ -20,6 +25,7 @@ const CHAINS: Record<string, ChainConfig> = {
     disabledReason:
       "Arbitrum is waiting for verified Uniswap subgraph deployments.",
     subgraphs: {},
+    contracts: {},
   },
   polygon: {
     slug: "polygon",
@@ -29,6 +35,7 @@ const CHAINS: Record<string, ChainConfig> = {
     disabledReason:
       "Polygon is waiting for verified Uniswap subgraph deployments.",
     subgraphs: {},
+    contracts: {},
   },
 };
 
