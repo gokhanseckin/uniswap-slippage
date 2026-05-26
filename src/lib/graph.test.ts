@@ -67,8 +67,6 @@ describe("analyzeIndexedPool", () => {
       expect.objectContaining({
         tickLower: -60,
         tickUpper: 60,
-        lowerPrice: "3980",
-        upperPrice: "4040",
         active: true,
         liquidity: "1000000",
       }),
@@ -103,6 +101,51 @@ describe("analyzeIndexedPool", () => {
     );
 
     expect(result.dynamicFee).toBe(true);
+  });
+
+  it("renders tick ranges in token1-per-token0 units when decimals differ", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      graphResponse({
+        pool: {
+          id: "0xpool",
+          token0: { id: "0x0", symbol: "USP", name: "USP", decimals: "18" },
+          token1: { id: "0x1", symbol: "USDC", name: "USD Coin", decimals: "6" },
+          feeTier: "500",
+          liquidity: "1000000",
+          tick: "-276324",
+          tickSpacing: "60",
+          token1Price: "1",
+          totalValueLockedToken0: "100",
+          totalValueLockedToken1: "100",
+          totalValueLockedUSD: "200",
+          hooks: "0x0000000000000000000000000000000000000000",
+          ticks: [
+            {
+              tickIdx: "-276360",
+              liquidityGross: "1000000",
+              liquidityNet: "1000000",
+              price1: "1000000000000",
+            },
+            {
+              tickIdx: "-276300",
+              liquidityGross: "1000000",
+              liquidityNet: "-1000000",
+              price1: "990000000000",
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await analyzeIndexedPool(
+      parsePoolUrl(V4_URL),
+      getEnabledChain("ethereum"),
+      { apiKey: "graph-key", fetcher },
+    );
+
+    const lowerPrice = Number(result.liquidityBands[0].lowerPrice);
+    expect(lowerPrice).toBeGreaterThan(0.9);
+    expect(lowerPrice).toBeLessThan(1.1);
   });
 
   it("looks up an address as v3 before falling back to v2", async () => {

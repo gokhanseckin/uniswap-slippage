@@ -6,6 +6,7 @@ import type {
   ProtocolVersion,
   TokenSummary,
 } from "./domain";
+import { priceFromTick } from "./math";
 
 type Fetcher = (
   input: string | URL | Request,
@@ -29,7 +30,6 @@ interface GraphTick {
   tickIdx: string;
   liquidityGross: string;
   liquidityNet: string;
-  price1: string;
 }
 
 interface ConcentratedPool {
@@ -80,7 +80,6 @@ const CONCENTRATED_QUERY = `
         tickIdx
         liquidityGross
         liquidityNet
-        price1
       }
     }
   }
@@ -95,7 +94,6 @@ const TICKS_PAGE_QUERY = `
         tickIdx
         liquidityGross
         liquidityNet
-        price1
       }
     }
   }
@@ -217,6 +215,8 @@ async function loadAllTicks(
 function liquidityBands(
   ticks: GraphTick[],
   currentTick: number | null,
+  decimals0: number,
+  decimals1: number,
 ): LiquidityBand[] {
   const ordered = [...ticks].sort(
     (left, right) => Number(left.tickIdx) - Number(right.tickIdx),
@@ -239,8 +239,8 @@ function liquidityBands(
       id: `${tickLower}:${tickUpper}`,
       tickLower,
       tickUpper,
-      lowerPrice: lower.price1,
-      upperPrice: upper.price1,
+      lowerPrice: priceFromTick(tickLower, decimals0, decimals1),
+      upperPrice: priceFromTick(tickUpper, decimals0, decimals1),
       liquidity: runningLiquidity.toString(),
       active:
         currentTick !== null &&
@@ -285,7 +285,12 @@ function concentratedAnalysis(
       token1: pool.totalValueLockedToken1,
     },
     tvlUsd: pool.totalValueLockedUSD,
-    liquidityBands: liquidityBands(pool.ticks, currentTick),
+    liquidityBands: liquidityBands(
+      pool.ticks,
+      currentTick,
+      Number(pool.token0.decimals),
+      Number(pool.token1.decimals),
+    ),
     indexedAt,
   };
 }

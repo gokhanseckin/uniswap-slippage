@@ -4,6 +4,7 @@ import {
   feeTierPct,
   priceFromReserves,
   priceFromSqrtPriceX96,
+  priceFromTick,
 } from "./math";
 
 describe("quote math", () => {
@@ -26,6 +27,13 @@ describe("quote math", () => {
 
   it("adjusts a sqrt ratio for token decimal precision", () => {
     expect(priceFromSqrtPriceX96(2n ** 96n, 18, 6)).toBe("1000000000000");
+  });
+
+  it("adjusts concentrated-liquidity tick ratios for token decimals", () => {
+    const price = Number(priceFromTick(-276324, 18, 6));
+
+    expect(price).toBeGreaterThan(0.9);
+    expect(price).toBeLessThan(1.1);
   });
 
   it("does not present a v4 dynamic fee flag as a fixed fee percentage", () => {

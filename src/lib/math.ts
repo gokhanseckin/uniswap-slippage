@@ -34,6 +34,17 @@ export function priceFromSqrtPriceX96(
   return compact(ratio);
 }
 
+export function priceFromTick(
+  tick: number,
+  decimals0: number,
+  decimals1: number,
+): string {
+  const ratio = new Decimal("1.0001")
+    .pow(tick)
+    .mul(new Decimal(10).pow(decimals0 - decimals1));
+  return compact(ratio);
+}
+
 export function executionPrice(
   amountIn: string,
   amountOut: string,
